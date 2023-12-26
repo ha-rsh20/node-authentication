@@ -1,6 +1,7 @@
 const expressAsyncHandler = require("express-async-handler");
 const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
+const user = require("../Schemas/user");
 const otpGenerator = require("./generateOTP");
 
 dotenv.config();
@@ -33,13 +34,34 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
     text: `Your OTP is ${otp}`,
   };
 
-  transporter.sendMail(mailOptions, (err, info) => {
-    if (err) {
-      res.status(500).send();
-    } else {
-      res.status(200).send();
-    }
-  });
+  if (reset !== undefined) {
+    user
+      .findOne({ email: req.params.mail })
+      .then((data) => {
+        if (data) {
+          transporter.sendMail(mailOptions, (err, info) => {
+            if (err) {
+              res.status(500).send();
+            } else {
+              res.status(200).send();
+            }
+          });
+        } else {
+          res.status(204).send();
+        }
+      })
+      .catch((err) => {
+        res.sendStatus(500);
+      });
+  } else {
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        res.status(500).send();
+      } else {
+        res.status(200).send();
+      }
+    });
+  }
 });
 
 const verifyOTP = (req, res) => {
